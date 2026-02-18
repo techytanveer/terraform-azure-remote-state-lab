@@ -1,0 +1,19 @@
+output "resource_group_name" {
+  description = "Name of the deployed resource group"
+  value       = module.resource_group.name
+}
+
+output "resource_group_location" {
+  description = "Location of the deployed resource group"
+  value       = module.resource_group.location
+}
+
+output "storage_account_name" {
+  description = "Name of the deployed storage account"
+  value       = module.storage.name
+}
+
+output "storage_blob_endpoint" {
+  description = "Primary blob endpoint of the storage account"
+  value       = module.storage.primary_blob_endpoint
+}
