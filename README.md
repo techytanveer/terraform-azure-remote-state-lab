@@ -1,4 +1,8 @@
+[![Terraform Plan](https://github.com/techytanveer/terraform-azure-remote-state-lab/actions/workflows/terraform-plan.yml/badge.svg)](https://github.com/techytanveer/terraform-azure-remote-state-lab/actions/workflows/terraform-plan.yml)
+
 # terraform-azure-remote-state-lab
+
+**(This project is at initial phase)**
 
 A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** — going beyond the free-tier default local state, with a production-grade project structure.
 
@@ -66,7 +70,7 @@ terraform-azure-remote-state-lab/
 
 ### 1. Bootstrap the Remote State Backend (one-time)
 
-```bash
+```
 chmod +x scripts/bootstrap.sh
 ./scripts/bootstrap.sh
 ```
@@ -75,7 +79,7 @@ This creates the Azure Storage Account and container that Terraform will use to 
 
 ### 2. Set Environment Variables
 
-```bash
+```
 export ARM_SUBSCRIPTION_ID="<your-subscription-id>"
 export ARM_TENANT_ID="<your-tenant-id>"
 export ARM_CLIENT_ID="<your-app-id>"
@@ -84,7 +88,7 @@ export ARM_CLIENT_SECRET="<your-password>"
 
 ### 3. Deploy Dev Environment
 
-```bash
+```
 cd environments/dev
 terraform init
 terraform plan
@@ -93,7 +97,7 @@ terraform apply
 
 ### 4. Destroy When Done (to save credits)
 
-```bash
+```
 terraform destroy
 ```
 
@@ -109,9 +113,11 @@ terraform destroy
 
 ## Author
 
-Built on Ubuntu 24.04 LTS · Azure Free Tier ($200 credit)
+Built on Ubuntu 24.04 LTS · Azure 
 
-## Installation User Guide
+---
+
+# Installation User Guide
 
 **Azure CLI Installation**
 
@@ -249,7 +255,7 @@ CONTAINER="tfstate"
 STORAGE_ACCOUNT="tfstate$(cat /dev/urandom | tr -dc 'a-z0-9' | head -c 8)"
 
 ```
-**The bootstrap.sh script**
+**The scripts/bootstrap.sh script**
 ```
 RESOURCE_GROUP="rg-tfstate"
 LOCATION="eastus"
