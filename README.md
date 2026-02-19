@@ -22,7 +22,7 @@ A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** 
 
 ## Prerequisites
 
-- Azure account (free tier with $200 credit works fine)
+- Azure account
 - Azure CLI installed and logged in
 - Terraform installed
 - Service Principal created with Contributor role
@@ -111,7 +111,7 @@ terraform destroy
 
 Built on Ubuntu 24.04 LTS · Azure Free Tier ($200 credit)
 
-## Installation
+## Installation User Guide
 
 **Azure CLI Installation**
 
@@ -196,3 +196,98 @@ Name                  CloudName    SubscriptionId                        TenantI
 Azure subscription 1  AzureCloud   a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d  7de7f4e3-6402-4f4e-8c2b-c3f55636d41d  Enabled  True
 ~/terraform-azure-remote-state-lab$
 ```
+
+**Authenticate Azure Account**
+
+```
+az account set --subscription "a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+```
+
+**Register the providers**
+
+```
+az provider register --namespace Microsoft.Storage --subscription "a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+az provider register --namespace Microsoft.Storage
+az provider register --namespace Microsoft.Network
+az provider register --namespace Microsoft.Compute
+az provider register --namespace Microsoft.KeyVault
+
+```
+
+**Verify registeration of all providers**
+It should say 'registerd', keep on checking while 'registering'
+
+```
+az provider show --namespace Microsoft.Storage | grep -i registrationState
+  "registrationState": "Registered",
+
+
+for ns in Microsoft.Network Microsoft.Compute Microsoft.KeyVault; do   echo -n "$ns: ";   az provider show --namespace $ns --query "registrationState" --output tsv; done
+Microsoft.Network:
+Registered
+Microsoft.Compute:
+Registered
+Microsoft.KeyVault:
+Registered
+```
+**Subscription ID, App ID, Tenant ID and others**
+Note down IDs from these outputs
+```
+az account set --subscription "a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+
+az account show --output table
+
+az account show --query "{SubscriptionID:id, TenantID:tenantId, Name:name}" --output table
+
+az account show --query id --output tsv
+
+ALSO, set:
+RESOURCE_GROUP="rg-tfstate"
+LOCATION="eastaus"
+CONTAINER="tfstate"
+
+STORAGE_ACCOUNT="tfstate$(cat /dev/urandom | tr -dc 'a-z0-9' | head -c 8)"
+
+```
+**The bootstrap.sh script**
+```
+RESOURCE_GROUP="rg-tfstate"
+LOCATION="eastus"
+STORAGE_ACCOUNT="tfstateyq2wlh1p"   # reuse the one already generated
+CONTAINER="tfstate"
+SUBSCRIPTION="a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+
+# Step 0 - Re-authenticate first
+az account set --subscription "$SUBSCRIPTION"
+
+# Step 1 - Resource group
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+# Step 2 - Storage account
+az storage account create \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --location "$LOCATION" \
+  --sku Standard_LRS \
+  --kind StorageV2 \
+  --allow-blob-public-access false \
+  --subscription "$SUBSCRIPTION"
+
+# Step 3 - Enable versioning
+az storage account blob-service-properties update \
+  --account-name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --enable-versioning true \
+  --subscription "$SUBSCRIPTION"
+
+# Step 4 - Create container
+az storage container create \
+  --name "$CONTAINER" \
+  --account-name "$STORAGE_ACCOUNT" \
+  --auth-mode login \
+  --subscription "$SUBSCRIPTION"
+
+echo "Done! Storage account: $STORAGE_ACCOUNT"
+
+```
+
