@@ -1,10 +1,11 @@
 [![Terraform Plan](https://github.com/techytanveer/terraform-azure-remote-state-lab/actions/workflows/terraform-plan.yml/badge.svg)](https://github.com/techytanveer/terraform-azure-remote-state-lab/actions/workflows/terraform-plan.yml)
-
-![Terraform](https://img.shields.io)
-![Ubuntu](https://img.shields.io)
-![Azure](https://img.shields.io)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com)
+[![Terraform](https://img.shields.io/badge/Terraform-844FBA?style=flat-square&logo=terraform&logoColor=white)](https://www.terraform.io)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=flat-square&logo=ubuntu&logoColor=white)](https://ubuntu.com)
+[![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-enabled-orange?logo=anthropic)](https://code.claude.com)
 [![Built with Claude](https://img.shields.io/badge/built%20with-Claude%20Code-blueviolet)](https://code.claude.com)
+
 
 # terraform-azure-remote-state-lab
 
