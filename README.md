@@ -11,7 +11,7 @@
 
 **(This project is at initial phase)**
 
-A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** — going beyond the free-tier default local state, with a production-grade project structure.
+A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** — with a production-grade project structure.
 
 ## What This Lab Covers
 
@@ -182,6 +182,79 @@ If you encounter any problem, please open an issue at https://aka.ms/azclibug
 
 ```
 
+**Creating a Service Principle**
+
+```
+# Grab subscription ID
+export SUB_ID=$(az account show --query id -o tsv)
+echo "Subscription: $SUB_ID"
+
+# Creating SP with Contributor role
+az ad sp create-for-rbac \
+  --name "terraform-sp" \
+  --role Contributor \
+  --scopes /subscriptions/$SUB_ID \
+  --output json
+
+OUTPUT:
+
+{
+  "appId": "8aa8dcef-0e29-488b-a3fc-7a0706aedd14",
+  "displayName": "terraform-sp",
+  "password": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "tenant": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
+}
+
+
+```
+
+**Setting Credentials**
+
+```
+cat >> ~/.bashrc << 'EOF'
+
+# Azure / Terraform credentials
+export ARM_SUBSCRIPTION_ID="<your-subscription-id>"
+export ARM_TENANT_ID="<tenant>"
+export ARM_CLIENT_ID="<appId>"
+export ARM_CLIENT_SECRET="<password>"
+EOF
+
+source ~/.bashrc
+
+ENABLE AUTOCOMPLETE
+# Terraform
+terraform -install-autocomplete
+
+# Azure CLI
+echo 'source /etc/bash_completion.d/azure-cli' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**GitHub Setup**
+```
+...1)
+
+cd terraform-azure-remote-state-lab
+git init
+git add .
+git commit -m "initial: terraform-azure-remote-state-lab scaffold"
+gh repo create terraform-azure-remote-state-lab --public
+git remote add origin git@github.com:techytanveer/terraform-azure-remote-state-lab.git
+git branch -M main
+git push -u origin main
+gh run list
+
+...2)
+
+Add GitHub Secrets (for CI to work) under Settings > Secrets > Actions:
+
+ARM_SUBSCRIPTION_ID
+ARM_TENANT_ID
+ARM_CLIENT_ID
+ARM_CLIENT_SECRET
+```
+
 **Azure Account**
 
 ```
@@ -194,11 +267,10 @@ If you encounter any problem, please open an issue at https://aka.ms/azclibug
   "managedByTenants": [],
   "name": "Azure subscription 1",
   "state": "Enabled",
-  "tenantDefaultDomain": "tanveerahmedlive.onmicrosoft.com",
+  "tenantDefaultDomain": "tanveerXXXXXXXXXX.onmicrosoft.com",
   "tenantDisplayName": "Default Directory",
-  "tenantId": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d",
-  "user": {
-    "name": "tanveer_ahmed@live.com",
+  "tenantId": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d", "user": {
+    "name": "tanveer_XXXXXX@XXXXX.com",
     "type": "user"
   }
 }
@@ -301,6 +373,15 @@ az storage container create \
   --subscription "$SUBSCRIPTION"
 
 echo "Done! Storage account: $STORAGE_ACCOUNT"
+
+```
+
+**Crosscheck STORAGE ACCOUNT**
+```
+az storage account list --output table
+AccessTier    AllowBlobPublicAccess    AllowCrossTenantReplication    CreationTime                      EnableHttpsTrafficOnly    Kind       Location    MinimumTlsVersion    Name             PrimaryLocation    ProvisioningState    ResourceGroup    StatusOfPrimary
+------------  -----------------------  -----------------------------  --------------------------------  ------------------------  ---------  ----------  -------------------  ---------------  -----------------  -------------------  ---------------  -----------------
+Hot           False                    False                          2026-02-19T03:27:09.050621+00:00  True                      StorageV2  eastus      TLS1_0               tfstateyq2wlh1p  eastus             Succeeded            rg-tfstate       available
 
 ```
 
