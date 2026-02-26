@@ -8,7 +8,7 @@
 
 # terraform-azure-remote-state-lab
 
-**(This project is at initial phase)**
+**(initial phase completed)**
 
 A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** — with a production-grade project structure.
 
