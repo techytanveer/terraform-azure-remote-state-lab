@@ -1,0 +1,57 @@
+RESOURCE_GROUP="rg-tfstate"
+LOCATION="eastus"
+STORAGE_ACCOUNT="tfstated5oppatx"   # reuse the one already generated
+CONTAINER="tfstate"
+
+# Step 1 - Resource group
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+az group create --name "rg-tfstate" --location "eastus"
+
+
+
+
+
+# Step 2 - Storage account
+az storage account create --name "tfstated5oppatx" --resource-group "rg-tfstate" --location "eastus" --sku Standard_LRS --kind StorageV2 --allow-blob-public-access false --min-tls-version TLS1_2
+
+az storage account create \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --location "$LOCATION" \
+  --sku Standard_LRS \
+  --kind StorageV2 \
+  --allow-blob-public-access false \
+  --min-tls-version TLS1_2
+
+
+
+
+# Step 3 - Enable versioning
+az storage account blob-service-properties update \
+  --account-name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --enable-versioning true
+
+
+az storage account blob-service-properties update --account-name "tfstated5oppatx" --resource-group "rg-tfstate" --enable-versioning true
+
+
+
+# Step 4 - Create container
+az storage container create \
+  --name "$CONTAINER" \
+  --account-name "$STORAGE_ACCOUNT" \
+  --auth-mode login
+
+
+
+
+
+az storage container create --name "tfstate" --account-name "tfstated5oppatx" --auth-mode login
+
+
+
+
+
+echo "Done! Storage account: $STORAGE_ACCOUNT"

@@ -15,7 +15,7 @@ CONTAINER="tfstate"
 echo "==> Checking prerequisites..."
 command -v az       >/dev/null 2>&1 || { echo "ERROR: Azure CLI not installed."; exit 1; }
 command -v terraform>/dev/null 2>&1 || { echo "ERROR: Terraform not installed."; exit 1; }
-az account show     >/dev/null 2>&1 || { echo "ERROR: Run 'az login' first."; exit 1; }
+az account show --output none 2>/dev/null || { echo "ERROR: Run 'az login' first."; exit 1; }
 
 echo "    Logged in : $(az account show --query user.name -o tsv)"
 echo "    Subscription: $(az account show --query name -o tsv)"
