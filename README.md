@@ -414,14 +414,14 @@ az ad sp create-for-rbac \
   --role Contributor \
   --scopes /subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d \
   --output json
-```
 
-`{
+
+{
   "appId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "displayName": "terraform-sp",
   "password": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "tenant": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
-}`
+}
 ```
 Saving it locally to a secure file:
 
