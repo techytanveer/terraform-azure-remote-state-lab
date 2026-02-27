@@ -388,8 +388,11 @@ Hot           False                    False                          2026-02-19
 **Current Status**
 
 ✅ Resource Group  : rg-tfstate
+
 ✅ Storage Account : tfstateyq2wlh1p
+
 ✅ Blob Versioning : enabled (isVersioningEnabled: true)
+
 ✅ Container       : tfstate  ("created": true)
 
 
@@ -525,8 +528,11 @@ terraform apply
 **Check 4 outputs in above**
 
 ✅ resource_group_name     = "rg-azlab-dev"
+
 ✅ resource_group_location = "eastus"
+
 ✅ storage_account_name    = "stazlabdev001"
+
 ✅ storage_blob_endpoint   = "https://stazlabdev001.blob.core.windows.net/"
 
 **What Just Happened**
@@ -551,6 +557,28 @@ Name           ResourceGroup    Location    Type                               S
 -------------  ---------------  ----------  ---------------------------------  ---------
 stazlabdev001  rg-azlab-dev     eastus      Microsoft.Storage/storageAccounts  Succeeded
 ~/terraform-azure-remote-state-lab$
+```
+
+**Preparing Git Push**
+
+Adding at GitHub Actions secrets under `Settings` → `Secrets` → `Actions`:
+
+| Secret | Value |
+| ------ | ----- |
+| `ARM_SUBSCRIPTION_ID` | `a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d` |
+| `ARM_TENANT_ID` | `7de7f4e3-6402-4f4e-8c2b-c3f55636d41d` |
+| `ARM_CLIENT_ID` | `appId` |
+| `ARM_CLIENT_SECRET` | `password` |
+
+OR adding via CLI
+
+```
+gh secret set ARM_SUBSCRIPTION_ID --body "a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+gh secret set ARM_TENANT_ID --body "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
+gh secret set ARM_CLIENT_ID --body "<appId>"
+gh secret set ARM_CLIENT_SECRET --body "<password>"
+
+gh secret list
 ```
 
 **Git Push**
