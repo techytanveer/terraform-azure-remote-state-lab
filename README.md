@@ -70,11 +70,11 @@ terraform-azure-remote-state-lab/
         └── backend.tf
 ```
 
-**Phase 1 ✅: Terraform Foundation — Remote State, Modular IaC & CI on Azure**
-**Phase 2 ✅: Add terraform apply to prod only on merge to main — full GitOps flow**
-**Phase 3 🔄: Add a Virtual Network + Subnet — classic IaC exercise** 
-**Phase 4 🔄: Add a Linux VM (Standard_B1s — free tier eligible)**
-**Phase 5 🔄: Add Azure Key Vault — store secrets properly**
+- **Phase 1 ✅: Terraform Foundation — Remote State, Modular IaC & CI on Azure**
+- **Phase 2 ✅: Add terraform apply to prod only on merge to main — full GitOps flow**
+- **Phase 3 🔄: Add a Virtual Network + Subnet — classic IaC exercise** 
+- **Phase 4 🔄: Add a Linux VM (Standard_B1s — free tier eligible)**
+- **Phase 5 🔄: Add Azure Key Vault — store secrets properly**
 
 ## Why Remote State?
 
@@ -668,3 +668,22 @@ terraform-azure-remote-state-lab/
 
 ---
 
+# Phase 2 -
+
+---
+
+# Phase 3 -
+
+---
+
+# Phase 4 -
+
+---
+
+# Phase 5 -
+
+---
+
+# Phase 6 -
+
+---
