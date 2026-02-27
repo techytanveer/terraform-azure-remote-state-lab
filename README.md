@@ -383,4 +383,53 @@ AccessTier    AllowBlobPublicAccess    AllowCrossTenantReplication    CreationTi
 Hot           False                    False                          2026-02-19T03:27:09.050621+00:00  True                      StorageV2  eastus      TLS1_0               tfstateyq2wlh1p  eastus             Succeeded            rg-tfstate       available
 
 ```
+## Post-Creation - Apply Stage
+
+**Current Status**
+✅ Resource Group  : rg-tfstate
+✅ Storage Account : tfstateyq2wlh1p
+✅ Blob Versioning : enabled (isVersioningEnabled: true)
+✅ Container       : tfstate  ("created": true)
+
+**Updating backend.tf Files & Verifying
+```
+# Do this from project root
+sed -i 's/REPLACE_WITH_STORAGE_ACCOUNT/tfstateyq2wlh1p/g' \
+  environments/dev/backend.tf \
+  environments/prod/backend.tf
+
+cat environments/dev/backend.tf
+cat environments/prod/backend.tf
+```
+
+**Creating the Service Principle**
+```
+az ad sp create-for-rbac \
+  --name "terraform-sp" \
+  --role Contributor \
+  --scopes /subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d \
+  --output json
+
+
+`{
+  "appId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "displayName": "terraform-sp",
+  "password": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "tenant": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
+}`
+
+
+
+Both `hbackend.tf` files are correctly updated. Notice the only difference between dev and prod is the `key`:
+
+dev  → key = "dev/terraform.tfstate"
+prod → key = "prod/terraform.tfstatea"
+```
+
+
+
+
+
+
+
 
