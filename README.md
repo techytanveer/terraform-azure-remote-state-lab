@@ -8,23 +8,6 @@
 
 # terraform-azure-remote-state-lab
 
-**Phases:**
-1. Blob Storage setup
-   1. Project Structure Ready and deployed
-   2. Azure CLI Installed  
-   3. Terraform Installed
-   4. Azure Cloud Logged in
-   5. Service Principle created
-   6. git initialized locally
-   7. github repo created
-   8. Azure Account Authenticated 
-   9. Providers registered & Resource Group Created
-   10. Environment Variable set locally
-   11. terraform init, plan & apply (dev/prod)
-   13. Environment Variable set @github secrect
-   12. git push
-2. Adding Service (pending)
-
 A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** — with a production-grade project structure.
 
 ## What This Lab Covers
@@ -680,4 +663,37 @@ After this push the workflow will run automatically, and from now on we can also
 
 ```
 
+### Summary of everything accomplished as of now:
+
+**What was built**
+
+```
+terraform-azure-remote-state-lab/
+├── Modular Terraform structure        ✅
+├── Azure Blob remote state backend    ✅
+├── Dev environment (applied)          ✅
+├── Prod environment (applied)         ✅
+└── GitHub Actions CI pipeline         ✅
+```
+**Azure Resources Live**
+
+| Resource | Name | Environment | 
+| -------- | ---- | ----------- |
+| Resource Group | `rg-tfstate` | backend |
+| Storage Account | `tfstateyq2wlh1p` | backend (state) |
+| Resource Group | `rg-azlab-dev` | dev | 
+| Storage Account | `stazlabdev001` | dev |
+| Resource Group | `rg-azlab-prod` | prod |
+| Storage Account | `stazlabprod001` | prod |
+
+**Key Concepts Practiced**
+
+- Azure provider authentication via Service Principal
+- Remote state with blob backend and state locking
+- Modular Terraform with reusable `modules/`
+- Isolated dev/prod environments sharing one backend
+- GitHub Actions CI running `plan` on every push
+- Manual workflow dispatch trigger
+
+---
 
