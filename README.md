@@ -768,7 +768,55 @@ One must see `production` listed above.
 
 ---
 
-# Phase 3 -
+# Phase 3 - Implementation 
+
+**What We're Building**
+
+- VNet + Subnet be deployed at Dev first, then promote to `prod` via PR
+- 1 Subnet to start with
+- Production-grade approach via adding Network Security Groups NSG to Subnet
+
+```
+modules/
+└── network/
+    ├── main.tf        ← VNet + Subnet + NSG + NSG Association
+    ├── variables.tf
+    └── outputs.tf
+
+environments/
+└── dev/
+    ├── main.tf        ← add network module call
+    ├── variables.tf   ← add network variables
+    ├── outputs.tf     ← add network outputs
+    └── terraform.tfvars ← add network values
+```
+
+**Resource Design**
+
+```
+VNet: 10.0.0.0/16  (vnet-azlab-dev)
+  └── Subnet: 10.0.1.0/24  (snet-web-azlab-dev)
+        └── NSG: nsg-web-azlab-dev
+              ├── Allow HTTPS inbound  (port 443)
+              ├── Allow HTTP inbound   (port 80)
+              └── Deny all inbound     (default catch-all)
+```
+
+**GitOps Flow**
+
+```
+feature/add-network branch
+        │
+        └──► PR to main
+                │
+                ├──► Plan (dev)  ← shows 4 resources to add
+                ├──► Plan (prod) ← shows 0 changes
+                │
+                └──► Merge to main
+                          │
+                          └──► Approval gate ──► Apply (prod)
+```
+
 
 ---
 

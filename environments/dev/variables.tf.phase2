@@ -1,0 +1,15 @@
+variable "project" {
+  description = "Project short name used in resource naming (lowercase, no spaces)"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name: dev or prod"
+  type        = string
+}
+
+variable "location" {
+  description = "Azure region to deploy resources"
+  type        = string
+  default     = "eastus"
+}

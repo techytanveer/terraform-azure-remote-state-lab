@@ -1,3 +1,7 @@
+# =============================================================================
+# environments/prod/main.tf
+# =============================================================================
+
 terraform {
   required_version = ">= 1.6"
 
@@ -34,4 +38,15 @@ module "storage" {
   resource_group_name = module.resource_group.name
   location            = var.location
   tags                = local.common_tags
+}
+
+module "network" {
+  source                = "../../modules/network"
+  project               = var.project
+  environment           = var.environment
+  location              = var.location
+  resource_group_name   = module.resource_group.name
+  vnet_address_space    = var.vnet_address_space
+  subnet_address_prefix = var.subnet_address_prefix
+  tags                  = local.common_tags
 }
