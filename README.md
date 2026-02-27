@@ -450,8 +450,32 @@ Terraform environment variables:
 | `password` | `ARM_CLIENT_SECRET` |
 | `tenant` | `ARM_TENANT_ID` |
 
+**Setting Environment variables:**
+```
+export ARM_SUBSCRIPTION_ID="a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+export ARM_TENANT_ID=$(cat ~/.azure/terraform-sp.json | grep tenant | awk -F'"' '{print $4}')
+export ARM_CLIENT_ID=$(cat ~/.azure/terraform-sp.json | grep appId | awk -F'"' '{print $4}')
+export ARM_CLIENT_SECRET=$(cat ~/.azure/terraform-sp.json | grep password | awk -F'"' '{print $4}')
+```
 
+**Add to `~/.bashrc` to persist across sessions:**
+```
+cat >> ~/.bashrc << 'EOF'
 
+# Azure Terraform credentials
+export ARM_SUBSCRIPTION_ID="a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+export ARM_TENANT_ID="<paste-tenant>"
+export ARM_CLIENT_ID="<paste-appId>"
+export ARM_CLIENT_SECRET="<paste-password>"
+EOF
+source ~/.bashrc
+```
 
-
+**Verifying variables are set:**
+```
+echo "SUB: $ARM_SUBSCRIPTION_ID"
+echo "TEN: $ARM_TENANT_ID"
+echo "CLI: $ARM_CLIENT_ID"
+echo "SEC: ${ARM_CLIENT_SECRET:0:4}****"   # shows only first 4 chars
+```
 
