@@ -388,15 +388,13 @@ Hot           False                    False                          2026-02-19
 **Current Status**
 
 ✅ Resource Group  : rg-tfstate
-
 ✅ Storage Account : tfstateyq2wlh1p
-
 ✅ Blob Versioning : enabled (isVersioningEnabled: true)
-
 ✅ Container       : tfstate  ("created": true)
 
 
 **Updating backend.tf Files & Verifying**
+
 ```
 # Do this from project root
 sed -i 's/REPLACE_WITH_STORAGE_ACCOUNT/tfstateyq2wlh1p/g' \
@@ -408,6 +406,7 @@ cat environments/prod/backend.tf
 ```
 
 **Creating the Service Principle**
+
 ```
 az ad sp create-for-rbac \
   --name "terraform-sp" \
@@ -423,6 +422,7 @@ az ad sp create-for-rbac \
   "tenant": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
 }
 ```
+
 **Saving it locally to a secure file:**
 
 ```
@@ -451,6 +451,7 @@ prod → key = "prod/terraform.tfstatea"
 | `tenant` | `ARM_TENANT_ID` |
 
 **Setting Environment variables:**
+
 ```
 export ARM_SUBSCRIPTION_ID="a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
 export ARM_TENANT_ID=$(cat ~/.azure/terraform-sp.json | grep tenant | awk -F'"' '{print $4}')
@@ -459,6 +460,7 @@ export ARM_CLIENT_SECRET=$(cat ~/.azure/terraform-sp.json | grep password | awk 
 ```
 
 **Add to `~/.bashrc` to persist across sessions:**
+
 ```
 cat >> ~/.bashrc << 'EOF'
 
@@ -472,13 +474,14 @@ source ~/.bashrc
 ```
 
 **Verifying variables are set:**
+
 ```
 echo "SUB: $ARM_SUBSCRIPTION_ID"
 echo "TEN: $ARM_TENANT_ID"
 echo "CLI: $ARM_CLIENT_ID"
 echo "SEC: ${ARM_CLIENT_SECRET:0:4}****"   # shows only first 4 chars
 ```
-## Applying Stage
+## Applying Stage - Development Environment
 
 ```
 cd ~/terraform-azure-remote-state-lab/environments/dev
@@ -499,6 +502,7 @@ terraform plan
 ```
 
 **Checks prior apply**
+
 ```
 Plan: 2 to add, 0 to change, 0 to destroy
 ```
@@ -508,27 +512,27 @@ environment = "dev"
 managed_by  = "terraform"
 project     = "azlab"
 ```
-Notice at the bottom:
+**Notice at the bottom:**
 
 ✅ "Releasing state lock" — confirms blob backend is working perfectly
 
 **Apply**
+
 ```
 terraform apply
 ```
 
+**Check 4 outputs in above**
+
 ✅ resource_group_name     = "rg-azlab-dev"
-
 ✅ resource_group_location = "eastus"
-
 ✅ storage_account_name    = "stazlabdev001"
-
 ✅ storage_blob_endpoint   = "https://stazlabdev001.blob.core.windows.net/"
 
 **What Just Happened**
 
 ```
-Your Ubuntu Machine
+At My Local Dev (Ubuntu) Machine
       │
       ├─► terraform apply
       │         │
@@ -539,3 +543,24 @@ Your Ubuntu Machine
       │         └─► State unlocked
 ```
 
+**Verifying at Azure**
+
+```
+~/terraform-azure-remote-state-lab$ az resource list --resource-group rg-azlab-dev --output table
+Name           ResourceGroup    Location    Type                               Status
+-------------  ---------------  ----------  ---------------------------------  ---------
+stazlabdev001  rg-azlab-dev     eastus      Microsoft.Storage/storageAccounts  Succeeded
+~/terraform-azure-remote-state-lab$
+```
+
+**Git Push**
+
+```
+cd ~/terraform-azure-remote-state-lab
+git init
+git add .
+git commit -m "initial: terraform-azure-remote-state-lab with Azure blob backend"
+git push origin main
+```
+
+## Applying Stage - Prodution Environment
