@@ -74,7 +74,7 @@ terraform-azure-remote-state-lab/
 
 - **Phase 1 ✅: Terraform Foundation — Remote State, Modular IaC & CI on Azure**
 - **Phase 2 ✅: Add terraform apply to prod only on merge to main — full GitOps flow**
-- **Phase 3 🔄: Add a Virtual Network + Subnet — classic IaC exercise** 
+- **Phase 3 ✅: Add a Virtual Network + Subnet — classic IaC exercise / GitOps in Action — Feature Branch → PR → Approval Gate → Prod Apply** 
 - **Phase 4 🔄: Add a Linux VM (Standard_B1s — free tier eligible)**
 - **Phase 5 🔄: Add Azure Key Vault — store secrets properly**
 
@@ -672,7 +672,7 @@ terraform-azure-remote-state-lab/
 
 # Phase 2 - Implementation
 
-**The Full GitOps Flow We're Building**
+**The Full GitOps Flow We're Building:**
 
 ```
 Developer                GitHub                        Azure
@@ -690,7 +690,7 @@ git push feature ──►  PR opened
 
 **One caveat** — the required reviewers protection rule on environments only works on **public repos or GitHub Pro/Team accounts**. Since my repo is public it should work fine.
 
-**What We Need to Change**
+**What We Need to Change:**
 
 **Current workflow** — triggers on push + PR:
 
@@ -702,12 +702,12 @@ git push feature ──►  PR opened
 - `terraform apply` for prod only ✅
 - With manual approval gate (so prod never applies <ins>accidentally</ins>) ✅
 
-**Two Files to Create/Modify**
+**Two Files to Create/Modify:**
 
 1. **Modify** `.github/workflows/terraform-plan.yml` — restrict to PRs only (not push to main)
 2. **Create** `.github/workflows/terraform-apply-prod.yml` — new, triggers on merge to main with approval gate
 
-**GitHub Environment Setup (required for approval gate)**
+**GitHub Environment Setup (required for approval gate):**
 
 The approval gate lives in a GitHub Environment called `production`. We need to create it first.
 
@@ -768,9 +768,9 @@ One must see `production` listed above.
 
 ---
 
-# Phase 3 - Implementation 
+# Phase 3 - Implementation (GitOps in Action — Feature Branch → PR → Approval Gate → Prod Apply)
 
-**What We're Building**
+**What We're Building:**
 
 - VNet + Subnet be deployed at Dev first, then promote to `prod` via PR
 - 1 Subnet to start with
@@ -791,7 +791,7 @@ environments/
     └── terraform.tfvars ← add network values
 ```
 
-**Resource Design**
+**Resource Design:**
 
 ```
 VNet: 10.0.0.0/16  (vnet-azlab-dev)
@@ -802,7 +802,7 @@ VNet: 10.0.0.0/16  (vnet-azlab-dev)
               └── Deny all inbound     (default catch-all)
 ```
 
-**GitOps Flow**
+**GitOps Flow:**
 
 ```
 feature/add-network branch
@@ -817,12 +817,413 @@ feature/add-network branch
                           └──► Approval gate ──► Apply (prod)
 ```
 
+**Pre-Checks:**
+
+```
+gh run list --workflow=terraform-apply-prod.yml
+
+Creating a feature branch
+
+git checkout -b feature/add-network
+```
+
+**Updating Project Files:**
+
+```
+# From project root, on feature/add-network branch
+cd ~/terraform-azure-remote-state-lab
+
+# Create network module directory
+mkdir -p modules/network
+
+# Creating module files
+modules/network/main.tf
+modules/network/variables.tf
+modules/network/outputs.tf
+
+# Modifying dev environment files
+environments/dev/main.tf
+environments/dev/variables.tf
+environments/dev/terraform.tfvars
+environments/dev/outputs.tf
+
+# Verifying all files
+find modules/network -type f | sort
+cat modules/network/main.tf
+
+```
+
+**Setting ARM Credentials for this session, if session expired earlier:**
+
+```
+export ARM_SUBSCRIPTION_ID="a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+export ARM_TENANT_ID="7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
+export ARM_CLIENT_ID="8aa8dcef-0e29-488b-a3fc-7a0706aedd14"
+export ARM_CLIENT_SECRET="<password>"
+
+To load on every new terminal:
+
+vi ~/.bashrc
+
+# Add the 4 ARM_ exports at the bottom
+source ~/.bashrc
+```
+
+**Testing Locally:**
+
+```
+cd environments/dev
+terraform init    # needed to pick up new network module
+terraform plan
+```
+We should see `Plan: 4 to add` — the VNet, Subnet, NSG, and NSG Association.
+
+**Error: IPv6 conflict - curl is trying IPv6 addresses first and failing**
+
+```
+CHECKS - if IPv6 causing issue:
+
+# Check DNS resolution
+nslookup registry.terraform.io
+
+# Check basic internet connectivity
+ping -c 3 8.8.8.8
+
+# Check if it's just DNS
+curl -v https://registry.terraform.io/.well-known/terraform.json
+
+WORKAROUND:
+
+curl -4 -v https://registry.terraform.io/.well-known/terraform.json
+
+echo 'ipv4' >> ~/.curlrc
+
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+FIX - disable IPv6 permanently:
+
+# Force IPv4 for curl system-wide
+echo 'ipv4' >> ~/.curlrc
+
+# Disable IPv6 on network interfaces
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+# Make it permanent across reboots
+echo 'net.ipv6.conf.all.disable_ipv6=1' | sudo tee -a /etc/sysctl.conf
+echo 'net.ipv6.conf.default.disable_ipv6=1' | sudo tee -a /etc/sysctl.conf
+```
+
+**terraform `init`, `plan` & 'apply` - Dev Env**
+
+```
+1. terraform init
+
+Terraform has been successfully initialized!
+
+2. terraform plan
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+Changes to Outputs:
+  + nsg_name                = "nsg-web-azlab-dev"
+  + subnet_name             = "snet-web-azlab-dev"
+  + vnet_id                 = (known after apply)
+  + vnet_name               = "vnet-azlab-dev"
+
+Clean plan! All 4 resources and 4 outputs look exactly right:
+
++ vnet-azlab-dev        Virtual Network  (10.0.0.0/16)
++ snet-web-azlab-dev    Subnet           (10.0.1.0/24)
++ nsg-web-azlab-dev     NSG              (HTTP/HTTPS allow, all else deny)
++ association           NSG ↔ Subnet
+
+3. terraform apply
+
+Type `yes` when prompted. Once successful we'll commit to the feature branch and raise a PR to main — which will trigger the full GitOps flow:
+
+PR opened
+  ├──► Plan (dev)   ← 0 changes (already applied)
+  └──► Plan (prod)  ← 4 to add
+
+Merge to main
+  └──► Approval gate ──► Apply (prod) ──► prod gets VNet + Subnet + NSG
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+
+Outputs:
+nsg_name = "nsg-web-azlab-dev"
+resource_group_location = "eastus"
+resource_group_name = "rg-azlab-dev"
+storage_account_name = "stazlabdev001"
+storage_blob_endpoint = "https://stazlabdev001.blob.core.windows.net/"
+subnet_name = "snet-web-azlab-dev"
+vnet_id = "/subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d/resourceGroups/rg-azlab-dev/providers/Microsoft.Network/virtualNetworks/vnet-azlab-dev"
+vnet_name = "vnet-azlab-dev"
+
+
+```
+
+**All 4 resources live on Azure in dev above! Now let's promote to prod via PR — the full GitOps flow:**
+
+Step 1 — Update prod environment files
+
+```
+The prod environment needs the same network variables added. Run these commands:
+
+cd ~/terraform-azure-remote-state-lab
+
+# Add network variables to prod variables.tf
+cat >> environments/prod/variables.tf << 'EOF'
+
+variable "vnet_address_space" {
+  description = "CIDR block for the Virtual Network"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "subnet_address_prefix" {
+  description = "CIDR block for the web subnet"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+EOF
+
+# Add network values to prod terraform.tfvars
+cat >> environments/prod/terraform.tfvars << 'EOF'
+
+# Network
+vnet_address_space    = "10.0.0.0/16"
+subnet_address_prefix = "10.0.1.0/24"
+EOF
+
+Then update environments/prod/main.tf — add the network module call at the bottom before the closing, same as dev:
+
+cat >> environments/prod/main.tf << 'EOF'
+
+module "network" {
+  source                = "../../modules/network"
+  project               = var.project
+  environment           = var.environment
+  location              = var.location
+  resource_group_name   = module.resource_group.name
+  vnet_address_space    = var.vnet_address_space
+  subnet_address_prefix = var.subnet_address_prefix
+  tags                  = local.common_tags
+}
+EOF
+
+And add network outputs to environments/prod/outputs.tf:
+
+cat >> environments/prod/outputs.tf << 'EOF'
+
+output "vnet_name" {
+  description = "Name of the Virtual Network"
+  value       = module.network.vnet_name
+}
+
+output "vnet_id" {
+  description = "Resource ID of the Virtual Network"
+  value       = module.network.vnet_id
+}
+
+output "subnet_name" {
+  description = "Name of the web subnet"
+  value       = module.network.subnet_name
+}
+
+output "nsg_name" {
+  description = "Name of the Network Security Group"
+  value       = module.network.nsg_name
+}
+EOF
+
+```
+
+Step 2 — Commit and push feature branch
+
+```
+git add .
+git status
+git commit -m "feat: add VNet + Subnet + NSG network module (dev applied)"
+git push -u origin feature/add-network
+```
+
+Step 3 — Raise a PR
+
+```
+gh pr create \
+  --title "feat: add VNet + Subnet + NSG network module" \
+  --body "Adds reusable network module with VNet, Subnet and NSG. Applied to dev, promoting to prod via GitOps flow." \
+  --base main \
+  --head feature/add-network
+
+This will trigger terraform-plan.yml — showing 0 changes for dev and 4 to add for prod. 
+```
+
+Step 4 — Merge the PR
+
+```
+gh pr checks --watch  #watching the CI plan run
+
+✅ Plan (dev)   — No changes
+✅ Plan (prod)  — Plan: 4 to add
+
+Once both are green, merge the PR:
+
+gh pr merge --squash --delete-branch
+```
+This will:
+
+1. Merge `feature/add-network` into `main`
+2. Trigger `terraform-apply-prod.yml`
+3. Plan (prod) runs first
+4. **Pauses for the approval**
+5. You approve → Apply (prod) runs → VNet + Subnet + NSG live on Azure prod
+
+Watching for the approval notification — either via email or check:
+
+```
+gh run list --workflow=terraform-apply-prod.yml
+```
+
+Step 5 — Approval via CLI
+
+```
+# List Pending Approvals
+
+gh run list --workflow=terraform-apply-prod.yml
+
+
+# Then get the specific run ID and check its status (syntax):
+
+gh run view <RUN_ID>
+
+
+# List pending deployments waiting for approval (syntax)
+
+gh api /repos/techytanveer/terraform-azure-remote-state-lab/actions/runs/<RUN_ID>/pending_deployments
+
+
+# Approve it (syntax)
+
+gh api \
+  --method POST \
+  /repos/techytanveer/terraform-azure-remote-state-lab/actions/runs/<RUN_ID>/pending_deployments \
+  --field "environment_ids[]=production" \
+  --field "state=approved" \
+  --field "comment=Approving prod apply via CLI"
+
+
+# Check the environment ID first
+
+gh api /repos/techytanveer/terraform-azure-remote-state-lab/environments \
+  --jq '.environments[] | select(.name=="production") | .id'
+
+~/terraform-azure-remote-state-lab$ gh run list --workflow=terraform-apply-prod.yml
+STATUS  TITLE                                                            WORKFLOW                BRANCH  EVENT  ID           ELAPSED  AGE
+*       feat: add VNet + Subnet + NSG network module (dev applied) (#1)  Terraform Apply (prod)  main    push   22485969920  4m7s     about 4 minutes ago
+✓       Phase2: README                                                   Terraform Apply (prod)  main    push   22476319398  57s      about 5 hours ago
+✓       ci: add GitOps flow - terraform apply prod with approval gate    Terraform Apply (prod)  main    push   22475714383  2m0s     about 5 hours ago
+~/terraform-azure-remote-state-lab$
+~/terraform-azure-remote-state-lab$
+
+
+# Run ID is 22485969920 
+
+
+# Get environment ID into variable
+
+ENV_ID=$(gh api /repos/techytanveer/terraform-azure-remote-state-lab/environments \
+  --jq '.environments[] | select(.name=="production") | .id')
+
+
+echo "Environment ID: $ENV_ID"
+
+
+# APPROVE
+
+gh api \
+  --method POST \
+  /repos/techytanveer/terraform-azure-remote-state-lab/actions/runs/22485969920/pending_deployments \
+  --field "environment_ids[]=$ENV_ID" \
+  --field "state=approved" \
+  --field "comment=Approving prod apply via CLI"
+
+```
+
+Step 6 — Watch Apply
+
+```
+~/terraform-azure-remote-state-lab$ gh run watch 22485969920
+✓ main Terraform Apply (prod) · 22485969920
+Triggered via push about 5 minutes ago
+JOBS
+✓ Plan (prod) in 26s (ID 65135567362)
+  ✓ Set up job
+  ✓ Checkout
+  ✓ Setup Terraform
+  ✓ Terraform Init
+  ✓ Terraform Validate
+  ✓ Terraform Plan
+  ✓ Upload Plan
+  ✓ Post Checkout
+  ✓ Complete job
+✓ Apply (prod) in 39s (ID 65135619343)
+  ✓ Set up job
+  ✓ Checkout
+  ✓ Setup Terraform
+  ✓ Terraform Init
+  ✓ Download Plan
+  ✓ Terraform Apply
+  ✓ Post Checkout
+  ✓ Complete job
+✓ Run Terraform Apply (prod) (22485969920) completed with 'success'
+```
+Step 7 — SUMMARY: The full GitOps flow worked out end to end
+
+```
+✅ Plan (prod)   — 26s
+✅ Apply (prod)  — 39s
+✅ Run completed with 'success'
+
+```
+
+Step 8 — Verify the resources are live on Azure
+
+```
+az resource list --resource-group rg-azlab-prod --output table
+
+
+You should see 4 resources now:
+
+stazlabprod001        Microsoft.Storage/storageAccounts
+vnet-azlab-prod       Microsoft.Network/virtualNetworks
+snet-web-azlab-prod   Microsoft.Network/virtualNetworks/subnets
+nsg-web-azlab-prod    Microsoft.Network/networkSecurityGroups
+```
+
+**What Just Completed**
+
+```
+Feature branch  ──► PR raised
+                      │
+                      ├──► Plan (dev)   ✅ 0 changes
+                      ├──► Plan (prod)  ✅ 4 to add
+                      │
+                    PR merged to main
+                      │
+                      ├──► Plan (prod)  ✅ confirmed
+                      ├──► Approval gate ✅ approved via CLI
+                      └──► Apply (prod) ✅ VNet + Subnet + NSG live
+```
+
 
 ---
 
 # Phase 4 -
 
----
+--
 
 # Phase 5 -
 
