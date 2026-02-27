@@ -76,41 +76,6 @@ terraform-azure-remote-state-lab/
 **Phase 4 🔄: Add a Linux VM (Standard_B1s — free tier eligible)**
 **Phase 5 🔄: Add Azure Key Vault — store secrets properly**
 
-## Phase 1 - Implementation
-
-### 1. Bootstrap the Remote State Backend (one-time)
-
-```
-chmod +x scripts/bootstrap.sh
-./scripts/bootstrap.sh
-```
-
-This creates the Azure Storage Account and container that Terraform will use to store state.
-
-### 2. Set Environment Variables
-
-```
-export ARM_SUBSCRIPTION_ID="<your-subscription-id>"
-export ARM_TENANT_ID="<your-tenant-id>"
-export ARM_CLIENT_ID="<your-app-id>"
-export ARM_CLIENT_SECRET="<your-password>"
-```
-
-### 3. Deploy Dev Environment
-
-```
-cd environments/dev
-terraform init
-terraform plan
-terraform apply
-```
-
-### 4. Destroy When Done (to save credits)
-
-```
-terraform destroy
-```
-
 ## Why Remote State?
 
 | | Local State | Azure Blob Backend |
@@ -127,7 +92,7 @@ Built on Ubuntu 24.04 LTS · Azure
 
 ---
 
-# Installation User Guide
+# Phase 1 - Implementation 
 
 **Azure CLI Installation**
 
