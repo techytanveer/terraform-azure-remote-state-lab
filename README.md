@@ -383,7 +383,7 @@ AccessTier    AllowBlobPublicAccess    AllowCrossTenantReplication    CreationTi
 Hot           False                    False                          2026-02-19T03:27:09.050621+00:00  True                      StorageV2  eastus      TLS1_0               tfstateyq2wlh1p  eastus             Succeeded            rg-tfstate       available
 
 ```
-## Post-Creation - Apply Stage
+## Post-Creation - Environmental Setup
 
 **Current Status**
 
@@ -423,7 +423,7 @@ az ad sp create-for-rbac \
   "tenant": "7de7f4e3-6402-4f4e-8c2b-c3f55636d41d"
 }
 ```
-Saving it locally to a secure file:
+**Saving it locally to a secure file:**
 
 ```
 # Create a secure file only you can read
@@ -441,7 +441,7 @@ dev  → key = "dev/terraform.tfstate"
 prod → key = "prod/terraform.tfstatea"
 ```
 
-Terraform environment variables:
+**Terraform environment variables:**
 
 
 | SP Output | Environment Variable |
@@ -477,5 +477,65 @@ echo "SUB: $ARM_SUBSCRIPTION_ID"
 echo "TEN: $ARM_TENANT_ID"
 echo "CLI: $ARM_CLIENT_ID"
 echo "SEC: ${ARM_CLIENT_SECRET:0:4}****"   # shows only first 4 chars
+```
+## Applying Stage
+
+```
+cd ~/terraform-azure-remote-state-lab/environments/dev
+
+terraform init
+```
+
+Above Action:
+
+1. Download the `azurerm` provider
+2. Connect to your Azure Blob Storage backend
+3. Create `dev/terraform.tfstate` in the blob container
+
+**After init Success**
+
+```
+terraform plan
+```
+
+**Checks prior apply**
+```
+Plan: 2 to add, 0 to change, 0 to destroy
+```
+Both with tags:
+```
+environment = "dev"
+managed_by  = "terraform"
+project     = "azlab"
+```
+Notice at the bottom:
+
+✅ "Releasing state lock" — confirms blob backend is working perfectly
+
+**Apply**
+```
+terraform apply
+```
+
+✅ resource_group_name     = "rg-azlab-dev"
+
+✅ resource_group_location = "eastus"
+
+✅ storage_account_name    = "stazlabdev001"
+
+✅ storage_blob_endpoint   = "https://stazlabdev001.blob.core.windows.net/"
+
+**What Just Happened**
+
+```
+Your Ubuntu Machine
+      │
+      ├─► terraform apply
+      │         │
+      │         ├─► State locked   in Azure Blob (tfstateyq2wlh1p)
+      │         ├─► Created        rg-azlab-dev
+      │         ├─► Created        stazlabdev001
+      │         ├─► State saved    in Azure Blob (dev/terraform.tfstate)
+      │         └─► State unlocked
 ```
 
