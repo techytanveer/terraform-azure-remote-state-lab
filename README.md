@@ -8,7 +8,22 @@
 
 # terraform-azure-remote-state-lab
 
-**(initial phase completed)**
+**Phases:**
+1. Blob Storage setup
+   1. Project Structure Ready and deployed
+   2. Azure CLI Installed  
+   3. Terraform Installed
+   4. Azure Cloud Logged in
+   5. Service Principle created
+   6. git initialized locally
+   7. github repo created
+   8. Azure Account Authenticated 
+   9. Providers registered & Resource Group Created
+   10. Environment Variable set locally
+   11. terraform init, plan & apply (dev/prod)
+   13. Environment Variable set @github secrect
+   12. git push
+2. Adding Service (pending)
 
 A hands-on Terraform lab using **Azure Blob Storage as a remote state backend** — with a production-grade project structure.
 
