@@ -70,6 +70,8 @@ terraform-azure-remote-state-lab/
         └── backend.tf
 ```
 
+## Project Phases
+
 - **Phase 1 ✅: Terraform Foundation — Remote State, Modular IaC & CI on Azure**
 - **Phase 2 ✅: Add terraform apply to prod only on merge to main — full GitOps flow**
 - **Phase 3 🔄: Add a Virtual Network + Subnet — classic IaC exercise** 
@@ -668,7 +670,101 @@ terraform-azure-remote-state-lab/
 
 ---
 
-# Phase 2 -
+# Phase 2 - Implementation
+
+**The Full GitOps Flow We're Building**
+
+```
+Developer                GitHub                        Azure
+─────────                ──────                        ──────
+git push feature ──►  PR opened
+                          │
+                          ├──► Plan (dev)   runs ──►  reads dev state
+                          ├──► Plan (prod)  runs ──►  reads prod state
+                          │         │
+                          │    PR reviewed & merged to main
+                          │
+                          └──► Apply (prod) runs ──►  applies to Azure
+                                                       writes prod state
+```
+
+**One caveat** — the required reviewers protection rule on environments only works on **public repos or GitHub Pro/Team accounts**. Since my repo is public it should work fine.
+
+**What We Need to Change**
+
+**Current workflow** — triggers on push + PR:
+
+- `terraform plan` for dev ✅
+- `terraform plan` for prod ✅
+
+**New workflow** — triggers only on merge to main:
+
+- `terraform apply` for prod only ✅
+- With manual approval gate (so prod never applies <ins>accidentally</ins>) ✅
+
+**Two Files to Create/Modify**
+
+1. **Modify** `.github/workflows/terraform-plan.yml` — restrict to PRs only (not push to main)
+2. **Create** `.github/workflows/terraform-apply-prod.yml` — new, triggers on merge to main with approval gate
+
+**GitHub Environment Setup (required for approval gate)**
+
+The approval gate lives in a GitHub Environment called `production`. We need to create it first.
+
+Go to your repo:
+
+```
+https://github.com/techytanveer/terraform-azure-remote-state-lab
+→ Settings
+→ Environments
+→ New environment
+→ Name: production
+→ Add required reviewers: techytanveer (myself)
+→ Save protection rules
+```
+
+**OR via CLI**
+
+Here's the CLI way using the GitHub API:
+
+```
+# Step 1 - Create the 'production' environment
+
+gh api \
+  --method PUT \
+  /repos/techytanveer/terraform-azure-remote-state-lab/environments/production
+
+# Step 2 - Get your user ID (needed for reviewer)
+
+gh api /user --jq '.id'
+```
+Paste the user ID output, then run Step 3 with it:
+
+```
+# Step 3 - Add yourself as required reviewer (replace USER_ID with output from above)
+gh api \
+  --method PUT \
+  /repos/techytanveer/terraform-azure-remote-state-lab/environments/production \
+  --field "reviewers[][type]=User" \
+  --field "reviewers[][id]=USER_ID" \
+  --field "wait_timer=0"
+```
+
+Then verify it was created correctly:
+
+```
+gh api /repos/techytanveer/terraform-azure-remote-state-lab/environments \
+  --jq '.environments[].name'
+
+~/terraform-azure-remote-state-lab$ gh api /repos/techytanveer/terraform-azure-remote-state-lab/environments \
+  --jq '.environments[].name'
+production
+~/terraform-azure-remote-state-lab$
+
+
+```
+
+One must see `production` listed above.
 
 ---
 
