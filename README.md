@@ -592,3 +592,77 @@ git push origin main
 ```
 
 ## Applying Stage - Prodution Environment
+
+**Repeating above steps, but not all because env variables are set, for Production environment**
+
+```
+~$ cd ~/terraform-azure-remote-state-lab/environments/prod/
+$terraform init
+$terraform plan
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + resource_group_location = "eastus"
+  + resource_group_name     = "rg-azlab-prod"
+  + storage_account_name    = "stazlabprod001"
+  + storage_blob_endpoint   = (known after apply)
+
+$terraform apply
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+resource_group_location = "eastus"
+resource_group_name = "rg-azlab-prod"
+storage_account_name = "stazlabprod001"
+storage_blob_endpoint = "https://stazlabprod001.blob.core.windows.net/"
+ 
+~/terraform-azure-remote-state-lab/environments/prod$ az resource list --resource-gro
+up rg-azlab-dev --output table
+Name           ResourceGroup    Location    Type                               Status
+-------------  ---------------  ----------  ---------------------------------  ------
+---
+stazlabdev001  rg-azlab-dev     eastus      Microsoft.Storage/storageAccounts  Succee
+ded
+~/terraform-azure-remote-state-lab/environments/prod$
+
+$git add .
+$git commit -m "initial: adding production resource"
+$git push origin main
+```
+
+## Knowledgebase: Running CI/CD Empty Workflow
+
+**There are two ways**
+
+1. Commit
+
+```
+git commit --allow-empty -m "chore: trigger CI to verify prod state sync"
+git push
+git run watch
+```
+2. workflow_dispatch
+
+```
+# Edit the workflow file
+vi .github/workflows/terraform-plan.yml
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: <<<<< Add this line
+
+git add .github/workflows/terraform-plan.yml
+git commit -m "ci: add workflow_dispatch for manual triggers"
+git push
+
+After this push the workflow will run automatically, and from now on we can also trigger it manually anytime with `gh workflow run terraform-plan.yml` — no empty commits needed.
+
+```
+
+
