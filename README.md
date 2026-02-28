@@ -1616,8 +1616,11 @@ git diff --stat
 
 git add .
 git commit -m "feat: add Linux VM (Ubuntu 24.04, Standard_D2s_v3, westus3) with public IP and RSA SSH"
+<<<<<<< HEAD
 git branch 
 git checkout -b feature/add-vm
+=======
+>>>>>>> 207e2ce (feat: add Linux VM (Ubuntu 24.04, Standard_D2s_v3, westus3) with public IP and RSA SSH)
 git push -u origin feature/add-vm
 
 # Raise the PR
@@ -1629,6 +1632,7 @@ gh pr create \
   --head feature/add-vm
 
 ```
+<<<<<<< HEAD
 Step 12 - Clear lock State (when needed)
 
 ```
@@ -1650,6 +1654,8 @@ az storage blob metadata update \
   --metadata terraformlockid="" \
   --account-key "$STORAGE_KEY"
 ```
+=======
+>>>>>>> 207e2ce (feat: add Linux VM (Ubuntu 24.04, Standard_D2s_v3, westus3) with public IP and RSA SSH)
 
 ---
 
