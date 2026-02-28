@@ -1,7 +1,6 @@
 # =============================================================================
 # modules/network/main.tf
-# Creates: VNet, Subnet, NSG, NSG Association
-# NSG Rules: HTTPS, HTTP, SSH (restricted to admin IP), Deny all
+# Creates: VNet, Subnet, NSG, NSG-Subnet Association
 # =============================================================================
 
 resource "azurerm_virtual_network" "this" {
@@ -17,7 +16,6 @@ resource "azurerm_subnet" "web" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.this.name
   address_prefixes     = [var.subnet_address_prefix]
-  depends_on           = [azurerm_virtual_network.this]
 }
 
 resource "azurerm_network_security_group" "web" {
@@ -52,19 +50,6 @@ resource "azurerm_network_security_group" "web" {
     destination_address_prefix = "*"
   }
 
-  # Allow SSH inbound - restricted to admin IP only
-  security_rule {
-    name                       = "Allow-SSH-Inbound"
-    priority                   = 120
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = var.admin_ip_cidr
-    destination_address_prefix = "*"
-  }
-
   # Deny all other inbound
   security_rule {
     name                       = "Deny-All-Inbound"
@@ -83,5 +68,4 @@ resource "azurerm_network_security_group" "web" {
 resource "azurerm_subnet_network_security_group_association" "web" {
   subnet_id                 = azurerm_subnet.web.id
   network_security_group_id = azurerm_network_security_group.web.id
-  depends_on                = [azurerm_subnet.web, azurerm_network_security_group.web]
 }

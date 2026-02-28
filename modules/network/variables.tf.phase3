@@ -34,15 +34,8 @@ variable "subnet_address_prefix" {
   default     = "10.0.1.0/24"
 }
 
-variable "admin_ip_cidr" {
-  description = "Your public IP in CIDR notation for SSH access (e.g. 1.2.3.4/32)"
-  type        = string
-}
-
 variable "tags" {
   description = "Tags to apply to all network resources"
   type        = map(string)
   default     = {}
 }
-
-

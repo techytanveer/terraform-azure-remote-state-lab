@@ -1,9 +1,9 @@
 # =============================================================================
-# environments/dev/variables.tf
+# modules/vm/variables.tf
 # =============================================================================
 
 variable "project" {
-  description = "Project short name used in resource naming (lowercase, no spaces)"
+  description = "Project short name used in resource naming"
   type        = string
 }
 
@@ -13,25 +13,17 @@ variable "environment" {
 }
 
 variable "location" {
-  description = "Azure region to deploy resources"
+  description = "Azure region"
   type        = string
-  default     = "eastus"
 }
 
-variable "vnet_address_space" {
-  description = "CIDR block for the Virtual Network"
+variable "resource_group_name" {
+  description = "Resource group to deploy VM into"
   type        = string
-  default     = "10.0.0.0/16"
 }
 
-variable "subnet_address_prefix" {
-  description = "CIDR block for the web subnet"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "admin_ip_cidr" {
-  description = "Your public IP in CIDR notation for SSH access (e.g. 1.2.3.4/32)"
+variable "subnet_id" {
+  description = "Subnet ID to attach the NIC to"
   type        = string
 }
 
@@ -45,4 +37,10 @@ variable "ssh_public_key" {
   description = "SSH public key content for VM authentication"
   type        = string
   sensitive   = true
+}
+
+variable "tags" {
+  description = "Tags to apply to all VM resources"
+  type        = map(string)
+  default     = {}
 }
