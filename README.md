@@ -4,6 +4,7 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=flat-square&logo=ubuntu&logoColor=white)](https://ubuntu.com)
 [![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-enabled-orange?logo=anthropic)](https://code.claude.com)
+![Agile](https://img.shields.io/badge/Methodology-Agile-blue)
 
 
 # terraform-azure-remote-state-lab
