@@ -1616,6 +1616,8 @@ git diff --stat
 
 git add .
 git commit -m "feat: add Linux VM (Ubuntu 24.04, Standard_D2s_v3, westus3) with public IP and RSA SSH"
+git branch 
+git checkout -b feature/add-vm
 git push -u origin feature/add-vm
 
 # Raise the PR
@@ -1626,6 +1628,27 @@ gh pr create \
   --base main \
   --head feature/add-vm
 
+```
+Step 12 - Clear lock State (when needed)
+
+```
+STORAGE_KEY=$(az storage account keys list \
+  --account-name tfstateyq2wlh1p \
+  --resource-group rg-tfstate \
+  --query '[0].value' -o tsv)
+
+az storage blob lease break \
+  --account-name tfstateyq2wlh1p \
+  --container-name tfstate \
+  --blob-name dev/terraform.tfstate \
+  --account-key "$STORAGE_KEY"
+
+az storage blob metadata update \
+  --account-name tfstateyq2wlh1p \
+  --container-name tfstate \
+  --name dev/terraform.tfstate \
+  --metadata terraformlockid="" \
+  --account-key "$STORAGE_KEY"
 ```
 
 ---
