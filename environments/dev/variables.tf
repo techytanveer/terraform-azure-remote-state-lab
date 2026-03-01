@@ -38,7 +38,7 @@ variable "admin_ip_cidr" {
   validation {
     condition     = can(cidrnetmask(var.admin_ip_cidr))
     error_message = "Must be a valid CIDR block e.g. 1.2.3.4/32"
-  |
+  }
 }
 
 variable "admin_username" {

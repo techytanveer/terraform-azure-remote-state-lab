@@ -30,7 +30,7 @@ variable "subnet_address_prefix" {
   default     = "10.0.1.0/24"
 }
 
-variable "admin_ip_cidr {
+variable "admin_ip_cidr" {
   description = "CIDR block for the public IP"
   type        = string
   sensitive   = true
