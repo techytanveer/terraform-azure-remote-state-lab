@@ -30,3 +30,25 @@ variable "subnet_address_prefix" {
   default     = "10.0.1.0/24"
 }
 
+variable "admin_ip_cidr" {
+  description = "Your public IP in CIDR notation for SSH access (e.g. 1.2.3.4/32)"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = can(cidrnetmask(var.admin_ip_cidr))
+    error_message = "Must be a valid CIDR block e.g. 1.2.3.4/32"
+  }
+}
+
+variable "admin_username" {
+  description = "Admin username for the VM"
+  type        = string
+  default     = "azureuser"
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key content for VM authentication"
+  type        = string
+  sensitive   = true
+}

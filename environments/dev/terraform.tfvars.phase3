@@ -4,13 +4,8 @@
 
 project     = "azlab"
 environment = "dev"
-location    = "westus3"
+location    = "eastus"
 
 # Network
 vnet_address_space    = "10.0.0.0/16"
 subnet_address_prefix = "10.0.1.0/24"
-
-# VM
-admin_username = "azureuser"
-# ssh_public_key is loaded from TF_VAR_ssh_public_key env var 
-#(never hardcode keys in tfvars)

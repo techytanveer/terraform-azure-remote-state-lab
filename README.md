@@ -43,10 +43,23 @@ terraform-azure-remote-state-lab/
 ├── .gitignore
 ├── .github/
 │   └── workflows/
-│       └── terraform-plan.yml       # CI: runs terraform plan on PR
+│       └── terraform-plan.yml       # CI: runs terraform plan on PR only (not push to main)
+│       └── terraform-apply-prod.yml # CI: runs terraform plan on PR (on merge, approval gate)
 ├── scripts/
 │   └── bootstrap.sh                 # One-time: creates blob storage backend
 ├── modules/
+│   ├── keyvault/                    # Azure Key Vault & access policy
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── vm/                          # Public IP, NIC, RHEL 9 VM module
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── network/                     # VNet + subnet + NSG + NSG Association module
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
 │   ├── resource-group/              # Reusable resource group module
 │   │   ├── main.tf
 │   │   ├── variables.tf
@@ -73,10 +86,12 @@ terraform-azure-remote-state-lab/
 ## Project Phases
 
 - **Phase 1 ✅: Terraform Foundation — Remote State, Modular IaC & CI on Azure**
-- **Phase 2 ✅: Add terraform apply to prod only on merge to main — full GitOps flow**
-- **Phase 3 ✅: Add a Virtual Network + Subnet — classic IaC exercise / GitOps in Action — Feature Branch → PR → Approval Gate → Prod Apply** 
-- **Phase 4 🔄: Add a Linux VM (Standard_B1s — free tier eligible)**
-- **Phase 5 🔄: Add Azure Key Vault — store secrets properly**
+- **Phase 2 ✅: Terraform apply to prod only on merge to main — full GitOps flow**
+- **Phase 3 ✅: Adding a Virtual Network + Subnet — classic IaC exercise / GitOps in Action — Feature Branch → PR → Approval Gate → Prod Apply** 
+- **Phase 4 ✅: Add a Linux VM in Dev environment (Standard_D2s_v3 - 2 vcpus, 8 GiB memory ($70.08/month) zone 3 of (US) West US 3)**
+- **Phase 5 🔄: Adding Azure Key Vault — store secrets properly**
+- **Phase 6 🔄: Azure Ops hands-on via CLI**
+- **Phase 7 🔄: Moving VM to Production from Dev**
 
 ## Why Remote State?
 
@@ -95,6 +110,10 @@ Built on Ubuntu 24.04 LTS · Azure
 ---
 
 # Phase 1 - Implementation 
+
+- **Remote State** — the headline feature
+- **Modular IaC** — shows structure and best practices
+- **CI on Azure** — shows automation maturity
 
 **Azure CLI Installation**
 
@@ -358,13 +377,12 @@ Hot           False                    False                          2026-02-19
 
 **Current Status**
 
+```
 ✅ Resource Group  : rg-tfstate
-
 ✅ Storage Account : tfstateyq2wlh1p
-
 ✅ Blob Versioning : enabled (isVersioningEnabled: true)
-
 ✅ Container       : tfstate  ("created": true)
+```
 
 
 **Updating backend.tf Files & Verifying**
@@ -498,13 +516,12 @@ terraform apply
 
 **Check 4 outputs in above**
 
+```
 ✅ resource_group_name     = "rg-azlab-dev"
-
 ✅ resource_group_location = "eastus"
-
 ✅ storage_account_name    = "stazlabdev001"
-
 ✅ storage_blob_endpoint   = "https://stazlabdev001.blob.core.windows.net/"
+```
 
 **What Just Happened**
 
@@ -915,7 +932,7 @@ echo 'net.ipv6.conf.all.disable_ipv6=1' | sudo tee -a /etc/sysctl.conf
 echo 'net.ipv6.conf.default.disable_ipv6=1' | sudo tee -a /etc/sysctl.conf
 ```
 
-**terraform `init`, `plan` & 'apply` - Dev Env**
+**terraform `init`, `plan` & `apply` - Dev Env**
 
 ```
 1. terraform init
@@ -1223,12 +1240,423 @@ Feature branch  ──► PR raised
 
 # Phase 4 -
 
---
+**What We're Building**
 
-# Phase 5 -
+```
+modules/
+└── vm/
+    ├── main.tf        ← Public IP, NIC, RHEL 9 VM
+    ├── variables.tf
+    └── outputs.tf
+
+modules/network/
+└── main.tf            ← Add SSH rule (port 22) to existing NSG
+```
+
+**Resource Design**
+
+```
+Public IP : pip-azlab-dev (Static)
+    │
+    └──► NIC : nic-azlab-dev
+                    │
+                    └──► VM : vm-azlab-dev
+                              ├── Size    : Standard_B1s (free tier)
+                              ├── OS      : RHEL 9 (latest)
+                              ├── Disk    : Standard_LRS 30GB
+                              └── Auth    : SSH public key
+
+NSG update:
+    ├── Allow HTTPS  (443)  ← existing
+    ├── Allow HTTP   (80)   ← existing
+    ├── Allow SSH    (22)   ← NEW — your IP only, not 0.0.0.0/0
+    └── Deny all inbound    ← existing
+```
+
+
+Step 1 — Security Note on SSH Rule
+
+Rather than allowing SSH from `0.0.0.0/0` (the whole internet — bad practice), we'll restrict it to the current public IP only.
+
+`admin_ip_cidr` and `ssh_public_key` since both are sensitive/machine-specific and shouldn't be hardcoded in files. Add both to `~/.bashrc`.
+
+This is production-grade security.
+
+```
+# Check your current public IP
+curl -4 ifconfig.me
+
+# Set as environment variable (best for CI/CD)
+export TF_VAR_admin_ip_cidr="109.59.219.58/32"
+
+echo 'export TF_VAR_admin_ip_cidr="109.59.219.58/32"' >> ~/.bashrc
+source ~/.bashrc
+
+# Generate RSA key pair (4096 bit)
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa_azure -C "azure-vm-key" -N ""
+
+# Verify it was created
+ls ~/.ssh/id_rsa_azure*
+
+Setting SSH key as environment variable, Never hardcode SSH keys in tfvars — use an env var instead:
+
+export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_rsa_azure.pub)
+
+export TF_VAR_admin_ip_cidr="101.59.219.58/32"
+
+echo "Key loaded: ${TF_VAR_ssh_public_key:0:30}..."
+```
+Step 2 — Create feature branch 
+
+```
+cd ~/terraform-azure-remote-state-lab
+git checkout main && git pull
+git checkout -b feature/add-vm
+```
+Step 3 — Project structure to modify
+
+```
+# New vm module
+mkdir -p modules/vm
+
+modules/vm/main.tf
+modules/vm/variables.tf
+modules/vm/outputs.tf
+
+# Updated network module (adds SSH rule)
+modules/network/main.tf
+modules/network/variables.tf
+
+# Updated dev environment
+environments/dev/main.tf
+environments/dev/variables.tf
+environments/dev/terraform.tfvars
+environments/dev/outputs.tf
+```
+
+Step 4 — terraform plan 
+
+```
+Plan: 3 to add, 1 to change, 0 to destroy.
+Changes to Outputs:
+  + private_ip              = (known after apply)
+  + public_ip               = (known after apply)
+  + ssh_command             = (known after apply)
+  + vm_name                 = "vm-azlab-dev"
+
+What's about to happen:
+
+~ nsg-web-azlab-dev     NSG        ← adds SSH rule (port 22, your IP only)
++ pip-azlab-dev         Public IP
++ nic-azlab-dev         NIC
++ vm-azlab-dev          RHEL 9 VM  (Standard_B1s)
+```
+
+Step 5 — terraform apply 
+
+```
+╷
+│ Error: creating Linux Virtual Machine (Subscription: "a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d"
+│ Resource Group Name: "rg-azlab-dev"
+│ Virtual Machine Name: "vm-azlab-dev"): performing CreateOrUpdate: unexpected status 409 (409 Conflict) with error: SkuNotAvailable: The requested VM size for resource 'Following SKUs have failed for Capacity Restrictions: Standard_B1s' is currently not available in location 'eastus'. Please try another size or deploy to a different location or different zone. See https://aka.ms/azureskunotavailable for details.
+│
+│   with module.vm.azurerm_linux_virtual_machine.this,
+│   on ../../modules/vm/main.tf line 29, in resource "azurerm_linux_virtual_machine" "this":
+│   29: resource "azurerm_linux_virtual_machine" "this" {
+│
+╵
+Releasing state lock. This may take a few moments...
+
+```
+
+Step 6 — Change in the plan 
+
+`Standard_B1s` was not available in `eastus` or any other location with free-tier — capacity issue.
+
+
+The closest offer for my free subscription having $200 credit is 'Standard_D2s_v3 - 2 vcpus, 8 GiB memory ($70.08), in zone 3 of (US) West US 3, Ubuntu pro
+
+
+Following selected:
+
+```
+Size     : Standard_D2s_v3
+Region   : westus3
+Zone     : 3
+OS       : Ubuntu 24.04 LTS (not Pro — Pro costs extra)
+```
+Updating Config:
+
+```
+# Update VM Size
+
+sed -i 's/Standard_B1s/Standard_D2s_v3/' modules/vm/main.tf
+
+# Update location to westus3
+
+sed -i 's/location    = "eastus"/location    = "westus3"/' environments/dev/terraform.tfvars
+
+# Add availability zone to vm module
+
+Now edit modules/vm/main.tf to add zone 3 at two locations:
+
+resource "azurerm_linux_virtual_machine" "this" {
+  zone                            = "3"       # ← add this
+
+resource "azurerm_public_ip" "this" {
+  zones               = ["3"]       # ← add this
+
+# Verify changes:
+
+grep -E "zone|size|location" modules/vm/main.tf
+grep location environments/dev/terraform.tfvars
+
+```
+Step 7 — Creating VMs scenarios
+
+| Option | Cost | Complexity | Production-like? |
+| ------ | ---- | ---------- | ---------------- |
+| Move VM to prod RG | One VM only | Medium | ✅ Yes |
+| Import into prod state | One VM only | Low | ✅ Yes |
+| Separate instances | Two VMs = double cost | Low | ✅ Most realistic |
+
+Step 8 — Production Scenarios (roadmap)
+
+The Flow
+
+```
+Current State:
+  rg-azlab-dev  ←  vm-azlab-dev (once created)
+
+Target State:
+  rg-azlab-prod ←  vm-azlab-prod (moved from dev)
+  rg-azlab-dev  ←  (no VM, dev is for testing only)
+```
+
+Steps We'll Follow
+
+```
+1. Create VM in dev        (terraform apply in dev)
+2. Test VM in dev          (SSH in, verify it works)
+3. Move VM to prod RG      (az resource move)
+4. Import VM into prod     (terraform import in prod)
+5. Remove VM from dev      (terraform state rm in dev)
+6. Update prod tfvars      (reflect new VM config)
+```
+
+First to verify VM move is supported to move.
+
+Azure resource move has restrictions — not all resources can move between resource groups.
+
+```
+# Check if VM resources are moveable
+az rest \
+  --method post \
+  --url "https://management.azure.com/subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d/resourceGroups/rg-azlab-dev/validateMoveResources?api-version=2021-04-01" \
+  --body '{
+    "resources": [],
+    "targetResourceGroup": "/subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d/resourceGroups/rg-azlab-prod"
+  }'
+```
+
+Step 9 — terraform refresh 
+
+```
+Outputs:
+
+nsg_name = "nsg-web-azlab-dev"
+private_ip = "10.0.1.4"
+public_ip = "20.14.74.45"
+resource_group_location = "westus3"
+resource_group_name = "rg-azlab-dev"
+ssh_command = "ssh -i ~/.ssh/id_rsa_azure azureuser@20.14.74.45"
+storage_account_name = "stazlabdev001"
+storage_blob_endpoint = "https://stazlabdev001.blob.core.windows.net/"
+subnet_name = "snet-web-azlab-dev"
+vm_name = "vm-azlab-dev"
+vnet_id = "/subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d/resourceGroups/rg-azla
+vnet_name = "vnet-azlab-dev"
+~/terraform-azure-remote-state-lab/environments/dev$
+
+
+Previous failed applies     ──► partially created resources on Azure
+                                  │
+                                  ├── VNet        ✅ created
+                                  ├── NSG         ✅ created  
+                                  ├── Subnet      ✅ created
+                                  ├── Storage     ✅ created
+                                  ├── Public IP   ✅ created
+                                  ├── NIC         ✅ created
+                                  └── VM          ✅ created
+
+terraform refresh             ──► synced state with what was already on Azure
+                                  └── all outputs populated from existing resources
+
+```
+
+Step 10 — terraform apply
+
+```
+
+Plan: 5 to add, 0 to change, 1 to destroy.
+
+Changes to Outputs:
+  ~ private_ip              = "10.0.1.4" -> (known after apply)
+  ~ storage_blob_endpoint   = "https://stazlabdev001.blob.core.windows.net/" -> (know
+
+
+
+Apply complete! Resources: 5 added, 0 changed, 1 destroyed.
+Outputs:
+nsg_name = "nsg-web-azlab-dev"
+private_ip = "10.0.1.4"
+public_ip = "20.14.74.45"
+resource_group_location = "westus3"
+resource_group_name = "rg-azlab-dev"
+ssh_command = "ssh -i ~/.ssh/id_rsa_azure azureuser@20.14.74.45"
+storage_account_name = "stazlabdev001"
+storage_blob_endpoint = "https://stazlabdev001.blob.core.windows.net/"
+subnet_name = "snet-web-azlab-dev"
+vm_name = "vm-azlab-dev"
+vnet_id = "/subscriptions/a4093cbf-410e-4ee8-8ba8-9ba7b7a1777d/resourceGroups/rg-azlab-dev/providers/Microsoft.Network/virtualNetworks/vnet-azlab-dev"
+vnet_name = "vnet-azlab-dev"
+~/terraform-azure-remote-state-lab/environments/dev$
+```
+
+Step 11 — Logging into VM
+
+```
+ssh -i ~/.ssh/id_rsa_azure azureuser@20.14.74.45
+
+~/terraform-azure-remote-state-lab/environments/dev$ ssh -i ~/.ssh/id_rsa_azure azure
+The authenticity of host '20.14.74.45 (20.14.74.45)' can't be established.
+ED25519 key fingerprint is SHA256:1DgtlaIHK517GEsW/vTY0ejonCiW0AFQfQcUFYOi8Q4.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '20.14.74.45' (ED25519) to the list of known hosts.
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.14.0-1017-azure x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sat Feb 28 06:20:58 UTC 2026
+
+  System load:  0.13              Processes:             125
+  Usage of /:   5.6% of 28.02GB   Users logged in:       0
+  Memory usage: 3%                IPv4 address for eth0: 10.0.1.4
+  Swap usage:   0%
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+azureuser@vm-azlab-dev:~$
+azureuser@vm-azlab-dev:~$
+azureuser@vm-azlab-dev:~$ uname -a
+Linux vm-azlab-dev 6.14.0-1017-azure #17~24.04.1-Ubuntu SMP Mon Dec  1 20:10:50 UTC 2
+azureuser@vm-azlab-dev:~$ cat /etc/os-release
+PRETTY_NAME="Ubuntu 24.04.3 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.3 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
+LOGO=ubuntu-logo
+azureuser@vm-azlab-dev:~$
+```
+
+**The VM is live and accessible! 🎉**
+
+```
+✅ OS      : Ubuntu 24.04.3 LTS (Noble Numbat)
+✅ Kernel  : 6.14.0-1017-azure
+✅ Host    : vm-azlab-dev
+✅ SSH     : working with RSA key
+✅ Region  : westus3
+```
+
+Step 11 — gitOps
+
+```
+# From project root
+
+cd ~/terraform-azure-remote-state-lab
+
+# Check what changed
+
+git status
+git diff --stat
+
+# Push
+
+git add .
+git commit -m "feat: add Linux VM (Ubuntu 24.04, Standard_D2s_v3, westus3) with public IP and RSA SSH"
+git branch 
+git checkout -b feature/add-vm
+git push -u origin feature/add-vm
+
+# Raise the PR
+
+gh pr create \
+  --title "feat: add Linux VM - Ubuntu 24.04 Standard_D2s_v3 westus3" \
+  --body "Adds VM module with Ubuntu 24.04 LTS, Standard_D2s_v3, public IP, RSA SSH auth. NSG updated with SSH rule restricted to admin IP. Applied and verified in dev via SSH." \
+  --base main \
+  --head feature/add-vm
+
+```
+Step 12 - Clear lock State (when needed)
+
+```
+STORAGE_KEY=$(az storage account keys list \
+  --account-name tfstateyq2wlh1p \
+  --resource-group rg-tfstate \
+  --query '[0].value' -o tsv)
+
+az storage blob lease break \
+  --account-name tfstateyq2wlh1p \
+  --container-name tfstate \
+  --blob-name dev/terraform.tfstate \
+  --account-key "$STORAGE_KEY"
+
+az storage blob metadata update \
+  --account-name tfstateyq2wlh1p \
+  --container-name tfstate \
+  --name dev/terraform.tfstate \
+  --metadata terraformlockid="" \
+  --account-key "$STORAGE_KEY"
+```
 
 ---
 
-# Phase 6 -
+# Phase 5 - (in progress)
+
+---
+
+# Phase 6 - (in progress)
 
 ---
