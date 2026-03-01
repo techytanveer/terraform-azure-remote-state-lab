@@ -37,6 +37,12 @@ variable "subnet_address_prefix" {
 variable "admin_ip_cidr" {
   description = "Your public IP in CIDR notation for SSH access (e.g. 1.2.3.4/32)"
   type        = string
+  sensitive   = true
+
+  validation {
+    condition     = can(cidrnetmask(var.admin_ip_cidr))
+    error_message = "Must be a valid CIDR block e.g. 1.2.3.4/32"
+  }
 }
 
 variable "tags" {
